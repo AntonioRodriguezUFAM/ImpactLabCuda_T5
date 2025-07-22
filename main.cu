@@ -6,6 +6,7 @@
 #include <iostream>
 using namespace std;
 
+//__global__ void mykernel_01 (){}
 
 __global__ void mykernel(void) {
 
@@ -31,6 +32,7 @@ int main(int argc, char** argv) {
 
 	// Step 04 : Call “kernel” routine to execute on GPU(with CUDA syntax that defines no of threads and their physical structure)
 	std::cout << "Hello Wold From CPU !\n";
+
 	mykernel << <1, 10 >> > ();
 
 		
