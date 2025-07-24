@@ -1,5 +1,4 @@
-// Tutorial 7: CUDA Memory Management
-
+// Cuda_Aula_02.cu
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -8,19 +7,24 @@
 
 
 // Kernel Add !!
-__global__ void add(int* a, int* b, int* c) {
+__global__ void addThread(int* a, int* b, int* c) {
 	int idx = threadIdx.x;
 	c[idx] = a[idx] + b[idx];
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
 }
 
+// Kenel with Blocks
+__global__ void add_block(int* a, int* b, int* c) {
+	c[blockIdx.x] = a[blockIdx.x] + b[blockIdx.x];
+	printf("Hello from CUDA Block X %d\n", blockIdx.x);
+}
+
 
 // CUDA Flow Steps 2025
+#define N 10             // Parallel Problem !!
 
 int main(int argc, char** argv) {
-	
-	// Vector size
-	int N = 10;
+
 	int size = N * sizeof(int);
 
 	// Step 01: Allocate memory space in host(CPU) for data
@@ -40,7 +44,7 @@ int main(int argc, char** argv) {
 		h_a[i] = i;
 		h_b[i] = i * 2;
 	}
-	
+
 	// Step 03 : Copy data to GPU
 	// Copy data from host to device
 	cudaMemcpy(d_a, h_a, size, cudaMemcpyHostToDevice);
@@ -51,7 +55,9 @@ int main(int argc, char** argv) {
 	std::cout << "Hello Wold From CPU !\n";
 
 	// Launch kernel
-	add << <1, N >> > (d_a, d_b, d_c);
+	addThread << <1, N >> > (d_a, d_b, d_c);
+
+	add_block << <N, 1 >> > (d_a, d_b, d_c);
 
 
 	printf("Hello from GPU (CPU Main)!\n");
@@ -66,7 +72,7 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < N; ++i) {
 		std::cout << h_a[i] << " + " << h_b[i] << " = " << h_c[i] << std::endl;
 	}
-	
+
 	// Step 06 : Free memory space in device(GPU)
 	// Free device memory
 	cudaFree(d_a);
@@ -77,5 +83,4 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
-
 
