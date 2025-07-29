@@ -1,4 +1,6 @@
-// Cuda_Aula_02.cu
+
+//Cuda_Aula_03.cu
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -12,7 +14,7 @@ __global__ void addThread(int* a, int* b, int* c) {
 	c[idx] = a[idx] + b[idx];
 	printf("Hello from CUDA Block X %d\n", blockIdx.x);
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
-	
+
 }
 
 // Kenel with Blocks
@@ -22,6 +24,7 @@ __global__ void add_block(int* a, int* b, int* c) {
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
 }
 
+
 __global__ void add_Index(int* a, int* b, int* c) {
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	c[index] = a[index] + b[index];
@@ -30,6 +33,18 @@ __global__ void add_Index(int* a, int* b, int* c) {
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
 }
 
+// Kernel Combined Block and Threads
+// n= 7
+//grid =8
+__global__ void add_Index_Size(int* a, int* b, int* c, int n) {
+	int index = threadIdx.x + blockIdx.x * blockDim.x;
+	if (index < n){
+		c[index] = a[index] + b[index];
+		}
+	printf("Hello from CUDA Index X %d\n", index);
+	printf("Hello from CUDA Block X %d\n", blockIdx.x);
+	printf("Hello from CUDA thread X %d\n", threadIdx.x);
+}
 
 
 // CUDA Flow Steps 2025
@@ -37,8 +52,9 @@ __global__ void add_Index(int* a, int* b, int* c) {
 
 // With More Parallel computing power, Solve bigger Problems!! 
 
-#define N (2048*20) // Bigger Problem
-#define THREADS_PER_BLOCK 512
+#define N (7) // Bigger Problem
+//#define THREADS_PER_BLOCK 4
+#define M 4
 
 
 
@@ -74,12 +90,26 @@ int main(int argc, char** argv) {
 	std::cout << "Hello Wold From CPU !\n";
 
 	// Launch kernel
-	addThread << <1, N >> > (d_a, d_b, d_c);
+	
+	//addThread << <1, N >> > (d_a, d_b, d_c);
+	//add_block << <N, 1 >> > (d_a, d_b, d_c);
 
-	add_block << <N, 1 >> > (d_a, d_b, d_c);
 
+	//add_Index << <N / THREADS_PER_BLOCK, THREADS_PER_BLOCK >> > (d_a, d_b, d_c);
 
-	add_Index << <N / THREADS_PER_BLOCK, THREADS_PER_BLOCK >> > (d_a, d_b, d_c);
+	/*N = Problem!!!
+	THREADS_PER_BLOCK= M = 4 
+
+		N/M - 7/4 =1 = 4 threads - 3
+		N+M-1 / M
+		7 +4-1 / 7
+		7+ 3 /7
+		10/7 = 2 - 4*3 =8 - 7*/
+
+	int blocks = N + (M - 1) / M;
+	
+	add_Index_Size << < blocks, M >> > (d_a, d_b, d_c, N);
+	
 
 	printf("Hello from GPU (CPU Main)!\n");
 	// Step 05 : Transfer results from GPU to CPU
