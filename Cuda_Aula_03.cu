@@ -8,7 +8,7 @@
 #include <iostream>
 
 
-// Kernel Add !!
+// Kernel Add threads !!
 __global__ void addThread(int* a, int* b, int* c) {
 	int idx = threadIdx.x;
 	c[idx] = a[idx] + b[idx];
@@ -17,14 +17,14 @@ __global__ void addThread(int* a, int* b, int* c) {
 
 }
 
-// Kenel with Blocks
+// Kernel with Blocks
 __global__ void add_block(int* a, int* b, int* c) {
 	c[blockIdx.x] = a[blockIdx.x] + b[blockIdx.x];
 	printf("Hello from CUDA Block X %d\n", blockIdx.x);
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
 }
 
-
+// Kernel with Blocks  and threads
 __global__ void add_Index(int* a, int* b, int* c) {
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	c[index] = a[index] + b[index];
@@ -33,7 +33,7 @@ __global__ void add_Index(int* a, int* b, int* c) {
 	printf("Hello from CUDA thread X %d\n", threadIdx.x);
 }
 
-// Kernel Combined Block and Threads
+// Kernel Combined Block and Threads- not friendly multiples
 // n= 7
 //grid =8
 __global__ void add_Index_Size(int* a, int* b, int* c, int n) {
@@ -52,9 +52,9 @@ __global__ void add_Index_Size(int* a, int* b, int* c, int n) {
 
 // With More Parallel computing power, Solve bigger Problems!! 
 
-#define N (7) // Bigger Problem
+#define N (1000) // Bigger Problem
 //#define THREADS_PER_BLOCK 4
-#define M 4
+#define M 33
 
 
 

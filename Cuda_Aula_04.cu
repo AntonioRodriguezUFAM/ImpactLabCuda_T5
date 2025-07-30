@@ -98,8 +98,12 @@ int main(int argc, char** argv) {
     const int C_WIDTH = B_WIDTH;
 
     // Define CUDA block and grid dimensions
+    cudaEvent_t start, stop;
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
     const int BLOCK_SIZE_X = 16;
     const int BLOCK_SIZE_Y = 16;
+    float milliseconds = 0;
 
     // --- 2. Allocate Host (CPU) Memory ---
     std::cout << "Allocating host memory..." << std::endl;
