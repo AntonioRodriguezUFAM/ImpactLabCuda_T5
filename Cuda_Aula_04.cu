@@ -22,10 +22,17 @@
 // Define the structure for a matrix
 // This structure will be used on both the host (CPU) and device (GPU)
 typedef struct {
-    int width;
+    int width ;
     int height;
     float* elements;
 } Matrix;
+
+typedef struct {
+    int width;
+    int height;
+    float* pixel;
+} Image;
+
 
 // CUDA Kernel for Matrix Multiplication (C = A * B)
 // This function runs on the GPU.
@@ -35,8 +42,8 @@ __global__ void MatMulKernel(Matrix A, Matrix B, Matrix C) {
 
     // Calculate the row and column of the C element to be computed by this thread.
     // blockIdx, blockDim, and threadIdx are built-in CUDA variables.
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y; 
+    int col = blockIdx.x * blockDim.x + threadIdx.x; 
 
     // Check if the thread is within the bounds of the output matrix C.
     // This is important if the matrix dimensions are not perfect multiples of the block dimensions.
@@ -78,7 +85,7 @@ void PrintMatrix(const Matrix& M) {
     }
 }
 
-
+//======================================================================
 // Main program entry point
 int main(int argc, char** argv) {
     // --- 1. Setup and Initialization ---
@@ -88,10 +95,15 @@ int main(int argc, char** argv) {
 
     // Define matrix dimensions
     // For C = A * B, A.width must equal B.height
-    const int A_HEIGHT = 256;
+   /* const int A_HEIGHT = 256;
     const int A_WIDTH = 512;
     const int B_HEIGHT = 512;
-    const int B_WIDTH = 128;
+    const int B_WIDTH = 128;*/
+
+    const int A_HEIGHT = 1000;
+    const int A_WIDTH = 1000;
+    const int B_HEIGHT = 1000;
+    const int B_WIDTH = 1000;
 
     // The resulting matrix C will have dimensions A.height x B.width
     const int C_HEIGHT = A_HEIGHT;
@@ -101,15 +113,18 @@ int main(int argc, char** argv) {
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
     CUDA_CHECK(cudaEventCreate(&stop));
-    const int BLOCK_SIZE_X = 16;
-    const int BLOCK_SIZE_Y = 16;
+    const int BLOCK_SIZE_X = 16;// 8, 16, 32, 64
+    const int BLOCK_SIZE_Y = 16; // 8, 16, 32, 64
+    const int BLOCK_SIZE_Z = 16; // 8, 16, 32, 64
     float milliseconds = 0;
+    float milliseconds_GPU = 0;
 
     // --- 2. Allocate Host (CPU) Memory ---
     std::cout << "Allocating host memory..." << std::endl;
     auto start_cpu_alloc = std::chrono::high_resolution_clock::now();
     Matrix h_A, h_B, h_C, h_C_cpu;
 
+  
     // Set matrix dimensions
     h_A.width = A_WIDTH; h_A.height = A_HEIGHT;
     h_B.width = B_WIDTH; h_B.height = B_HEIGHT;
@@ -156,6 +171,7 @@ int main(int argc, char** argv) {
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
     CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    milliseconds_GPU = +milliseconds;
     std::cout << "-> Device allocation time: " << milliseconds << " ms\n" << std::endl;
 
 
@@ -168,12 +184,14 @@ int main(int argc, char** argv) {
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
     CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    milliseconds_GPU = +milliseconds;
     std::cout << "-> Host to Device copy time: " << milliseconds << " ms\n" << std::endl;
 
     // --- 5. Launch the CUDA Kernel ---
     std::cout << "Launching CUDA kernel..." << std::endl;
 
     // Define the thread block dimensions
+    //dim3 dimBlock(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z);
     dim3 dimBlock(BLOCK_SIZE_X, BLOCK_SIZE_Y);
 
     // Define the grid dimensions
@@ -194,16 +212,29 @@ int main(int argc, char** argv) {
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
     CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    milliseconds_GPU = +milliseconds;
     std::cout << "-> Kernel execution time: " << milliseconds << " ms\n" << std::endl;
 
 
     // --- 6. Copy Results from Device to Host ---
     std::cout << "Copying results from device to host..." << std::endl;
+    CUDA_CHECK(cudaEventRecord(start));
     CUDA_CHECK(cudaMemcpy(h_C.elements, d_C.elements, size_C, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    milliseconds_GPU = +milliseconds;
+    std::cout << "-> Device to host execution time: " << milliseconds << " ms\n" << std::endl;
 
     // --- 7. Verification ---
     std::cout << "Verifying results against CPU computation..." << std::endl;
     auto start_cpu_verify = std::chrono::high_resolution_clock::now();
+
+    //---- 7.1 Verificar gpu
+    std::cout << "Verifying results Total GPU computation..." << std::endl;
+    std::cout << "-> Device Total execution time: " << milliseconds_GPU << " ms\n" << std::endl;
+
     MatMulCPU(h_A, h_B, h_C_cpu);
 
     auto stop_cpu_verify = std::chrono::high_resolution_clock::now();
